@@ -4,13 +4,13 @@ name: Crawling
 
 on:
   schedule:
-    - cron: '8 0,20 * * *' # 매일 새벽 6시와 20시에 실행
+    - cron: "0 0,12 * * *" # 매일 정오와 자정에 실행
   workflow_dispatch:
     inputs:
       logLevel:
-        description: 'Log level'
+        description: "Log level"
         required: true
-        default: 'warning'
+        default: "warning"
         type: choice
         options:
           - info
