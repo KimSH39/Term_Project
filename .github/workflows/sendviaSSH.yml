@@ -32,8 +32,8 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          bash ~/news/getNewsAndCopyToHDFS.sh
+          zsh ~/news/getNewsAndCopyToHDFS.sh
           sleep 5
-          bash ~/wordcount/wordcountToHBASE.sh
+          zsh ~/wordcount/wordcountToHBASE.sh
           sleep 10
           python3.6 ~/wordcloud/generate_wordcloud.py
