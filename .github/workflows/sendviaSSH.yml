@@ -9,7 +9,7 @@ name: Send Crawled Files via SSH
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # 매 12시간마다 실행
+    - cron: '*/15 * * * *'  # 매 15분마다 실행
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,13 +23,14 @@ jobs:
     - name: SSH into Deployment Server
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
         proxy_host: ${{ secrets.PROXY_SERVER_HOST }}
         proxy_port: ${{ secrets.PROXY_SERVER_PORT }}
         proxy_username: ${{ secrets.PROXY_SERVER_USERNAME }}
         proxy_key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SERVER_HOST }}
+        port: ${{ secrets.SERVER_PORT }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           bash ~/news/getNewsAndCopyToHDFS.sh
           sleep 5
