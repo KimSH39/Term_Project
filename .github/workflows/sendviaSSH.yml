@@ -32,4 +32,7 @@ jobs:
         proxy_key: ${{ secrets.SSH_KEY }}
         script: |
           bash ~/news/getNewsAndCopyToHDFS.sh
+          sleep 5
           bash ~/wordcount/wordcountToHBASE.sh
+          sleep 10
+          python3.6 /home/maria_dev/wordcloud/generate_wordcloud.py
