@@ -31,9 +31,11 @@ jobs:
         port: ${{ secrets.SERVER_PORT }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
+        envs: |
+          PYSPARK_PYTHON=python3.6
         script: |
-          zsh ~/news/getNewsAndCopyToHDFS.sh
+          bash ~/news/getNewsAndCopyToHDFS.sh
           sleep 5
-          zsh ~/wordcount/wordcountToHBASE.sh
+          bash ~/wordcount/wordcountToHBASE.sh
           sleep 10
           python3.6 ~/wordcloud/generate_wordcloud.py
