@@ -35,7 +35,5 @@ jobs:
           PYSPARK_PYTHON=python3.6
         script: |
           bash ~/news/getNewsAndCopyToHDFS.sh
-          sleep 5
-          zsh ~/wordcount/wordcountToHBASE.sh > ~/wordcountToHBASE_log
           sleep 10
           python3.6 ~/wordcloud/generate_wordcloud.py
