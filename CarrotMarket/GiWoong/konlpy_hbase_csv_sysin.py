@@ -2,54 +2,55 @@ from pyspark.sql import SparkSession
 from konlpy.tag import Okt
 import happybase
 import sys
-# SparkSession 생성
-spark = SparkSession.builder.appName("WordCount").getOrCreate()
 
-# CSV 파일을 DataFrame으로 읽기
-file_path = sys.argv[1]  # CSV 파일 경로 설정
-df = spark.read.option("header", "true").option("multiLine", "true").option("quote", "\"").option("escape", "\"").csv(file_path)
-# 확인용
-df.show(1)
-# '기사 제목'과 '기사 내용' 컬럼 선택
-articles_df = df
+dependent_nouns = [
+    "것", "겸", "김", "길", "나름", "나위", "동안", "대로", "따름", "때문", "데", "듯", "리", "마련", "만", "만큼",
+    "망정", "모양", "바", "바람", "뻔", "뿐", "법", "수", "성", "셈", "십상", "일쑤", "적", "줄", "지", "지경", "중",
+    "참", "채", "체", "척", "탓", "터", "턱", "통", "판", "편", "한", "을", "를", "이", "가", "등", "곳", "말", "내", 
+    "며", "과", "스", "또", "몇", "더"
+]
 
-# Konlpy를 이용한 불용어 처리를 위한 함수 정의
 def remove_stopwords(text):
-    if text == None:
+    if text is None:
         return []
     okt = Okt()
     words = okt.nouns(text)
-    clean_tokens = [(word,) for word in words]
+    clean_tokens = [(word,) for word in words if word not in dependent_nouns]
     return clean_tokens
 
-# '기사 제목'을 row key로 하여 단어 빈도 계산 및 HBase에 데이터 저장
-connection = happybase.Connection('localhost', port=9090)  # HBase 호스트와 포트 입력
-table = connection.table(sys.argv[2])  # HBase 테이블 이름 입력
+spark = SparkSession.builder.appName("WordCount").config("spark.executor.memory", "2g") \
+    .config("spark.driver.memory", "2g").getOrCreate()
 
-for row in articles_df.collect():
-    # print(row)
-    title = row[0]
-    content = row[1]
-    # 기사 내용의 불용어 제거 및 단어별로 분할하여 RDD로 변환
-    words_rdd = spark.sparkContext.parallelize(remove_stopwords(content))
+file_path = sys.argv[1]
+table_name = sys.argv[2]
 
-    # 각 단어의 출현 횟수 계산
-    word_counts = words_rdd.map(lambda word: (word, 1)).reduceByKey(lambda a, b: a + b).collect()
+# Read the CSV file and repartition the DataFrame
+articles_df = spark.read.option("header", "true").option("multiLine", "true").option("quote", "\"").option("escape", "\"").csv(file_path)
+articles_df = articles_df.repartition(30)
 
-    # HBase에 데이터 저장 (기사 제목을 row key로 사용)
-    # for word, count in word_counts:
-    #     table.put(
-    #         str(title).encode(),  # 기사 제목을 row key로 변환하여 입력
-    #         {b'cf:word': str(word[0]).encode(), b'cf:count': str(count).encode()}
-    #     )
-    for word, count in word_counts:
-        table.put(
-            word[0].encode('utf-8'),
-            {'cf:count': str(count)}
-        )
 
-# 연결 종료
+# Process the DataFrame and perform word count operations
+word_counts_rdd = articles_df.rdd.flatMap(lambda x: remove_stopwords(x[1])).map(lambda x: (x, 1)) \
+    .reduceByKey(lambda a, b: a + b) \
+    .map(lambda x: (x[0][0].encode('utf-8'), str(x[1])))
+
+table_columns = {
+    'cf:count': dict()
+}
+
+connection = happybase.Connection('localhost', port=9090)
+if table_name.encode() in connection.tables():
+    connection.disable_table(table_name)
+    connection.delete_table(table_name)
+
+connection.create_table(table_name, table_columns)
+table = connection.table(table_name)
 connection.close()
 
-# SparkSession 종료
+for word, count in word_counts_rdd.collect():
+    connection = happybase.Connection('localhost', port=9090)
+    table = connection.table(table_name)
+    data = {b'cf:count': count}
+    table.put(word, data)
+    connection.close()
 spark.stop()
