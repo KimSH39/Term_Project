@@ -33,7 +33,7 @@ sleep 5
 spark-submit /home/maria_dev/wordcount/konlpy_hbase_csv_sysin.py /user/maria_dev/crawling/SecuritylightNews.csv securitylight_news >> /home/maria_dev/wordcountToHBASE_log
 wait 
 if [ $? -eq 0 ]; then
-    echo "subway_news done"
+    echo "securitylight_news done"
 fi
 sleep 5
 spark-submit /home/maria_dev/wordcount/konlpy_hbase_csv_sysin.py /user/maria_dev/crawling/subwayNews.csv subway_news >> /home/maria_dev/wordcountToHBASE_log
